@@ -1,0 +1,24 @@
+{
+  "name": "Typer Common functions",
+  "workspaceFolder": "/workspace",
+  "workspaceMount": "source=${localWorkspaceFolder},target=${containerWorkspaceFolder},type=bind,consistency=cached",
+  "image": "ghcr.io/openjksoftware/python-devcontainer:3.8",
+  "postCreateCommand": "poetry install && poetry run pre-commit install",
+  "remoteUser": "ContainerUser",
+  "mounts": [
+    "source=vscode_cache,target=/home/vscode/.vscode-server,type=volume"
+  ],
+  // vscode Extensions to install in the devcontainer
+  "extensions": [
+    "ms-python.python",
+    "visualstudioexptteam.vscodeintellicode",
+    "ms-python.vscode-pylance",
+    "christian-kohler.path-intellisense",
+    "njpwerner.autodocstring",
+    "eamodio.gitlens",
+    "esbenp.prettier-vscode",
+    "naumovs.color-highlight",
+    "mechatroner.rainbow-csv",
+    "bungcip.better-toml"
+  ]
+}

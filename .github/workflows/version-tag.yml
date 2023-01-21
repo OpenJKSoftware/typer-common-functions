@@ -1,0 +1,31 @@
+name: Git tag
+
+on:
+  pull_request_target:
+    types:
+      - closed
+
+jobs:
+  tag:
+    name: Git Tag
+    runs-on: ubuntu-latest
+    if:
+      "github.event.pull_request.merged == true && startsWith( github.event.pull_request.title, ':shipit: Bump to
+      Version: ' )"
+    steps:
+      - uses: actions/checkout@v3
+      - name: setup git config
+        run: |
+          git config user.name "GitHub Actions Bot"
+          git config user.email "<>"
+
+      - name: Parse Tag name
+        id: version_number
+        run: |
+          TAG_NAME=$(echo "${{ github.event.pull_request.title }}" | awk '{print $5}')
+          echo "TAG_NAME=$TAG_NAME" >> $GITHUB_OUTPUT
+
+      - name: Git tag & push
+        run: |
+          git tag ${{ steps.version_number.outputs.TAG_NAME }}
+          git push --tags
