@@ -15,7 +15,7 @@ include=[
 [tool.poetry_bumpversion.file."src/typer_common_functions/__init__.py"]
 
 [tool.poetry.dependencies]
-python = "^3.8,<=3.11"
+python = "^3.8,<3.12"
 typer = "^0.7.0"
 rich = "^13.2.0"
 
