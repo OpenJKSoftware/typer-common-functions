@@ -3,7 +3,7 @@
   "workspaceFolder": "/workspace",
   "workspaceMount": "source=${localWorkspaceFolder},target=${containerWorkspaceFolder},type=bind,consistency=cached",
   "image": "ghcr.io/openjksoftware/python-devcontainer:3.8",
-  "postCreateCommand": "poetry install && poetry run pre-commit install",
+  "postCreateCommand": "poetry config virtualenvs.in-project true && poetry install && poetry run pre-commit install",
   "remoteUser": "ContainerUser",
   "mounts": [
     "source=vscode_cache,target=/home/vscode/.vscode-server,type=volume"
@@ -20,5 +20,8 @@
     "naumovs.color-highlight",
     "mechatroner.rainbow-csv",
     "bungcip.better-toml"
-  ]
+  ],
+  "settings": {
+    "python.defaultInterpreterPath": ".venv/bin/python"
+  }
 }
