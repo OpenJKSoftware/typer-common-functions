@@ -22,7 +22,7 @@ def set_logging(verbose: bool = False) -> None:
         install_rich_traceback(suppress=[click, typer_helpers])
         logging.basicConfig(
             level=logging.DEBUG,
-            format="{message}",
+            format="{name}: {message}",
             style="{",
             handlers=[
                 RichHandler(
