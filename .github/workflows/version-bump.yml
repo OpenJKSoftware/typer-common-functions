@@ -68,14 +68,14 @@ jobs:
               base: 'main',
               body: [
                 'Bumps Package Version ${{ steps.bump_version.outputs.PRE_BUMP_VERSION }} --> ${{ steps.bump_version.outputs.BUMPED_VERSION }}',
-                '',
-                '# What's new?',
-                ''
+                "",
+                "# What's new?",
+                "- "
               ].join('\n')
             });
             github.rest.issues.addLabels({
               owner,
               repo,
               issue_number: result.data.number,
-              labels: ['release', 'automated pr','auto-release']
+              labels: ['release', 'automated pr', 'auto-release']
             });
