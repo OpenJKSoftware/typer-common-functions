@@ -39,6 +39,7 @@ jobs:
         run: |
           git config user.name "GitHub Actions Bot"
           git config user.email "<>"
+          git fetch --all
           git checkout -b release
       - name: Bump Version
         id: bump_version
@@ -54,7 +55,7 @@ jobs:
           git commit -m "[BUMP] Package ${{ steps.bump_version.outputs.PRE_BUMP_VERSION }} to ${{ steps.bump_version.outputs.BUMPED_VERSION }}"
       - name: Git push
         run: |
-          git push origin release
+          git push origin release --force
       - name: Create Pull Request
         uses: actions/github-script@v6
         with:
