@@ -78,8 +78,21 @@ def typer_retuner(ret: Any) -> Any:
     """
     parent_func = sys._getframe(1).f_code.co_name  # pylint: disable=protected-access
     if isinstance(ret, int):
-        parent_name = sys._getframe(2).f_code.co_name  # pylint: disable=protected-access
-        if parent_name != "typer_unwrapper":
+        is_typer_cmd = False
+        i = 1
+        while not is_typer_cmd:
+            i += 1
+            # Loop up the stack until we find main or any other function
+            try:
+                parent_name = sys._getframe(i).f_code.co_name  # pylint: disable=protected-access
+                if parent_name == "_main":
+                    is_typer_cmd = True
+                elif parent_name in ["wrapper", "invoke", "typer_unwrapper"]:
+                    continue
+                break
+            except ValueError:
+                break
+        if is_typer_cmd:
             LOGGER.debug("Exiting Typer Command: %s with code %s", parent_func, ret)
             if ret > 255:
                 LOGGER.debug("Capping exit code to 255")
