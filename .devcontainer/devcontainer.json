@@ -8,20 +8,25 @@
   "mounts": [
     "source=vscode_cache,target=/home/vscode/.vscode-server,type=volume"
   ],
-  // vscode Extensions to install in the devcontainer
-  "extensions": [
-    "ms-python.python",
-    "visualstudioexptteam.vscodeintellicode",
-    "ms-python.vscode-pylance",
-    "christian-kohler.path-intellisense",
-    "njpwerner.autodocstring",
-    "eamodio.gitlens",
-    "esbenp.prettier-vscode",
-    "naumovs.color-highlight",
-    "mechatroner.rainbow-csv",
-    "bungcip.better-toml"
-  ],
-  "settings": {
-    "python.defaultInterpreterPath": ".venv/bin/python"
+  "customizations": {
+    "vscode": {
+      // vscode Extensions to install in the devcontainer
+      "extensions": [
+        "ms-python.python",
+        "visualstudioexptteam.vscodeintellicode",
+        "ms-python.vscode-pylance",
+        "christian-kohler.path-intellisense",
+        "njpwerner.autodocstring",
+        "eamodio.gitlens",
+        "esbenp.prettier-vscode",
+        "naumovs.color-highlight",
+        "mechatroner.rainbow-csv",
+        "bungcip.better-toml"
+        "seatonjiang.gitmoji-vscode",
+      ],
+      "settings": {
+        "python.defaultInterpreterPath": ".venv/bin/python"
+      }
+    }
   }
 }
