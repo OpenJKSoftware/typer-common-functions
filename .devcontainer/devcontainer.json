@@ -15,14 +15,19 @@
         "ms-python.python",
         "visualstudioexptteam.vscodeintellicode",
         "ms-python.vscode-pylance",
+        "ms-python.black-formatter",
+        "ms-python.mypy-type-checker",
+        "ms-python.pylint",
+        "ms-python.isort",
+        "ms-python.flake8",
         "christian-kohler.path-intellisense",
         "njpwerner.autodocstring",
         "eamodio.gitlens",
         "esbenp.prettier-vscode",
         "naumovs.color-highlight",
         "mechatroner.rainbow-csv",
-        "bungcip.better-toml"
-        "seatonjiang.gitmoji-vscode",
+        "bungcip.better-toml",
+        "seatonjiang.gitmoji-vscode"
       ],
       "settings": {
         "python.defaultInterpreterPath": ".venv/bin/python"

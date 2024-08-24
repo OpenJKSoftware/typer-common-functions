@@ -1,4 +1,5 @@
 """Typer Helper functions and Decorators."""
+
 import functools
 import inspect
 import logging
@@ -102,7 +103,7 @@ def typer_retuner(ret: Any) -> Any:
     return ret
 
 
-def _get_first_env_var(typer_env_spec: Union[List[str], str]) -> str:
+def _get_first_env_var(typer_env_spec: Union[List[str], str]) -> Optional[str]:
     """Get Envvar by Name or first from List of Names.
 
     Parameters
@@ -121,12 +122,16 @@ def _get_first_env_var(typer_env_spec: Union[List[str], str]) -> str:
     for ev_name in typer_env_spec:
         env_var = os.getenv(ev_name)
         return env_var
+    return None
 
 
 def default_from_typer_info(
-    typer_info: Union[OptionInfo, ArgumentInfo, ParameterInfo], target_type=None, fallback_default=None
+    typer_info: Union[OptionInfo, ArgumentInfo, ParameterInfo],
+    target_type: Any = None,
+    fallback_default: Any = None,
 ) -> Any:
     """Get Default Value from Typer Info.
+
     Check env vars, then default
 
     Parameters
@@ -156,7 +161,7 @@ def default_from_typer_info(
     if typer_info.default is Ellipsis:
         if fallback_default is not None:
             return target_type(fallback_default) if target_type else fallback_default
-        raise ValueError(f"Missing Required Argument: {typer_info.name}")
+        raise ValueError(f"Missing Required Argument: {getattr(typer_info, 'name', typer_info)}")
     if callable(typer_info.default):
         return typer_info.default()
     return typer_info.default
