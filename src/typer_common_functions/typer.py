@@ -5,10 +5,10 @@ import logging
 import os
 import sys
 from dataclasses import dataclass
-from typing import Any, Callable, List, Optional, Union
+from typing import Any, Callable, List, Optional, Union, get_args
 
 import typer
-from typer.models import ParameterInfo
+from typer.models import ArgumentInfo, OptionInfo, ParameterInfo
 
 LOGGER = logging.getLogger(__name__)
 
@@ -116,13 +116,50 @@ def _get_first_env_var(typer_env_spec: Union[List[str], str]) -> str:
         Env Var Value
     """
     if isinstance(typer_env_spec, str):
-        return str(os.getenv(typer_env_spec))
+        return os.getenv(typer_env_spec)
 
     for ev_name in typer_env_spec:
         env_var = os.getenv(ev_name)
+        return env_var
+
+
+def default_from_typer_info(
+    typer_info: Union[OptionInfo, ArgumentInfo, ParameterInfo], target_type=None, fallback_default=None
+) -> Any:
+    """Get Default Value from Typer Info.
+    Check env vars, then default
+
+    Parameters
+    ----------
+    typer_info : Union[OptionInfo, ArgumentInfo,ParameterInfo]
+        Typer Info Object
+    target_type : Any, optional
+        Type to cast default to, by default None
+    fallback_default : Any, optional
+        Fallback Default Value, by default None (For compatibility with typing.Annotated)
+
+    Returns
+    -------
+    Any
+        Default Value
+    """
+    if env_spec := typer_info.envvar:
+        env_var = _get_first_env_var(env_spec)
         if env_var:
-            return str(env_var)
-    return ""
+            try:
+                if env_res := target_type(env_var) if target_type else env_var:
+                    return env_res
+            except TypeError as type_err:
+                raise TypeError(
+                    f"Type mismatch in Env Var: '{env_spec}' Expected: '{target_type}' Got: '{type(env_var)}"
+                ) from type_err
+    if typer_info.default is Ellipsis:
+        if fallback_default is not None:
+            return target_type(fallback_default) if target_type else fallback_default
+        raise ValueError(f"Missing Required Argument: {typer_info.name}")
+    if callable(typer_info.default):
+        return typer_info.default()
+    return typer_info.default
 
 
 def typer_unpacker(funct: Callable[..., Any]) -> Callable[..., Any]:
@@ -162,23 +199,17 @@ def typer_unpacker(funct: Callable[..., Any]) -> Callable[..., Any]:
             # If the default value is a typer.Option or typer.Argument, we have to
             # pull either the .default attribute and pass it in the function
             # invocation, or call it first.
-            if isinstance(func_default, ParameterInfo):
-                if env_spec := func_default.envvar:
-                    env_var = _get_first_env_var(env_spec)
-                    try:
-                        if env_res := target_type(env_var) if target_type else env_var:
-                            kwargs[name] = env_res
-                            continue
-                    except TypeError as type_err:
-                        raise TypeError(
-                            f"Type mismatch in Env Var: '{env_spec}' Expected: '{target_type}' Got: '{type(env_var)}"
-                        ) from type_err
-                if callable(func_default.default):
-                    kwargs[name] = func_default.default()
-                else:
-                    if func_default.default is Ellipsis:
-                        raise ValueError(f"Missing required Argument for: {name}")
-                    kwargs[name] = func_default.default
+            typer_info = None
+            if isinstance(func_default, (OptionInfo, ArgumentInfo, ParameterInfo)):
+                typer_info = func_default
+                func_default = None
+            elif annotated_args := get_args(target_type):  # Check if we are dealing with typing.Annotated
+                target_type = annotated_args[0]
+                if isinstance(annotated_args[1], (OptionInfo, ArgumentInfo, ParameterInfo)):
+                    typer_info = annotated_args[1]
+            if typer_info:
+                func_default = default_from_typer_info(typer_info, target_type, func_default)
+                kwargs[name] = func_default
 
         # Call the wrapped function with the defaults injected if not specified.
         return funct(*args, **kwargs)
