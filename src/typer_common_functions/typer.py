@@ -127,6 +127,7 @@ def _get_first_env_var(typer_env_spec: Union[List[str], str]) -> Optional[str]:
 
 def default_from_typer_info(
     typer_info: Union[OptionInfo, ArgumentInfo, ParameterInfo],
+    arg_name: str,
     target_type: Any = None,
     fallback_default: Any = None,
 ) -> Any:
@@ -138,6 +139,8 @@ def default_from_typer_info(
     ----------
     typer_info : Union[OptionInfo, ArgumentInfo,ParameterInfo]
         Typer Info Object
+    arg_name : str
+        Argument Name for Error Messages
     target_type : Any, optional
         Type to cast default to, by default None
     fallback_default : Any, optional
@@ -161,7 +164,7 @@ def default_from_typer_info(
     if typer_info.default is Ellipsis:
         if fallback_default is not None:
             return target_type(fallback_default) if target_type else fallback_default
-        raise ValueError(f"Missing Required Argument: {getattr(typer_info, 'name', typer_info)}")
+        raise ValueError(f"Missing Required Argument: {arg_name}")
     if callable(typer_info.default):
         return typer_info.default()
     return typer_info.default
@@ -213,7 +216,7 @@ def typer_unpacker(funct: Callable[..., Any]) -> Callable[..., Any]:
                 if isinstance(annotated_args[1], (OptionInfo, ArgumentInfo, ParameterInfo)):
                     typer_info = annotated_args[1]
             if typer_info:
-                func_default = default_from_typer_info(typer_info, target_type, func_default)
+                func_default = default_from_typer_info(typer_info, name, target_type, func_default)
                 kwargs[name] = func_default
 
         # Call the wrapped function with the defaults injected if not specified.
