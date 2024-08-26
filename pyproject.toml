@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "typer-common-functions"
-version = "0.0.10"
+version = "0.0.11"
 description = "Commonly used Functions around the Typer CLI Library"
 authors = ["Joshua Kreuder <joshua_kreuder@outlook.com>"]
 keywords=["cli","typer"]
