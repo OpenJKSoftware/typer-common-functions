@@ -1,6 +1,6 @@
 [project]
 name = "typer-common-functions"
-version = "0.0.12"
+dynamic = ["version"]
 description = "Commonly used Functions around the Typer CLI Library"
 authors = [
     {name = "Joshua Kreuder", email = "joshua_kreuder@outlook.com"}

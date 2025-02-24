@@ -36,11 +36,11 @@ jobs:
       - name: Bump Version
         id: bump_version
         run: |
-          VERSION=$(hatch version)
+          PRE_BUMP_VERSION=$(hatch version)
           hatch version ${{ github.event.inputs.versionPart }}
           BUMPED_VERSION=$(hatch version)
           echo "BUMPED_VERSION=$BUMPED_VERSION" >> $GITHUB_OUTPUT
-          echo "PRE_BUMP_VERSION=$VERSION" >> $GITHUB_OUTPUT
+          echo "PRE_BUMP_VERSION=$PRE_BUMP_VERSION" >> $GITHUB_OUTPUT
       - name: Commiting Version change
         run: |
           git add --all
