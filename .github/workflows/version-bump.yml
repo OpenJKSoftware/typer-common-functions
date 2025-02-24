@@ -27,12 +27,12 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
+          ref: main
 
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-          cache: "pip"
 
       - name: Install Hatch
         uses: pypa/hatch@install
@@ -55,6 +55,9 @@ jobs:
           hatch version ${{ inputs.bump_type }}
           NEW_VERSION=$(hatch version)
           echo "NEW_VERSION=$NEW_VERSION" >> $GITHUB_OUTPUT
+          git add .
+          git commit -m "🔖 Bump version v${{ steps.current_version.outputs.CURRENT_VERSION }} → v${{ steps.bump_version.outputs.NEW_VERSION }}"
+          git push origin release/v${{ steps.current_version.outputs.CURRENT_VERSION }}
 
       - name: Generate Changelog
         id: changelog
@@ -65,15 +68,19 @@ jobs:
           # Get repository URL
           REPO_URL="https://github.com/${GITHUB_REPOSITORY}"
 
+          # Create a temporary file for raw changelog
           {
-            echo "# 🔖 Version Bump: v${{ steps.current_version.outputs.CURRENT_VERSION }} → v${{ steps.bump_version.outputs.NEW_VERSION }}"
+            echo "# 🔖 New Release: v${{ steps.bump_version.outputs.NEW_VERSION }}"
+            echo "Previous version: v${{ steps.current_version.outputs.CURRENT_VERSION }}"
             echo
-            echo "## 📝 Changes"
+            echo "## 📝 Summary"
+            echo
+            echo "<if this is here i was lazy>"
+            echo
+            echo "## 📝 What's new?"
             echo
 
             if [ -z "$LAST_TAG" ]; then
-              echo "🎉 First Release!"
-              echo
               # If no tags exist, get all commits
               git log --pretty=format:"- [%s]($REPO_URL/commit/%H)" --no-merges
             else
@@ -85,17 +92,17 @@ jobs:
             echo "---"
           } > changelog.md
 
-          # Escape content for GitHub Actions
+          # Read the file and escape the content for GitHub Actions
           CHANGELOG=$(cat changelog.md)
-          CHANGELOG="${CHANGELOG//'%'/'%25'}"
-          CHANGELOG="${CHANGELOG//$'\n'/'%0A'}"
-          CHANGELOG="${CHANGELOG//$'\r'/'%0D'}"
-          echo "CONTENT=$CHANGELOG" >> $GITHUB_OUTPUT
+          echo "CONTENT<<EOF" >> $GITHUB_OUTPUT
+          echo "$CHANGELOG" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
 
       - name: Create Pull Request
         uses: peter-evans/create-pull-request@v6
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
+          base: main
           branch: release/v${{ steps.current_version.outputs.CURRENT_VERSION }}
           title: "🔖 Release v${{ steps.bump_version.outputs.NEW_VERSION }}"
           body: ${{ steps.changelog.outputs.CONTENT }}
