@@ -17,12 +17,21 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
+          ref: main
+
+      - name: Verify Merge State
+        run: |
+          # Ensure we're on the latest main
+          git fetch origin main
+          git reset --hard origin/main
+          # Print current commit for verification
+          echo "Current commit:"
+          git log -1 --oneline
 
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-          cache: "pip"
 
       - name: Install Hatch
         uses: pypa/hatch@install
@@ -31,7 +40,13 @@ jobs:
         id: version
         run: |
           VERSION=$(hatch version)
+          echo "Current version from Hatch: $VERSION"
           echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
+          # Verify this is the new version
+          if [[ "$VERSION" == "${{ github.event.pull_request.title }}" ]]; then
+            echo "Error: Version mismatch. Got $VERSION but expected ${{ github.event.pull_request.title }}"
+            exit 1
+          fi
 
       - name: Create Git Tag
         run: |
