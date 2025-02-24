@@ -26,10 +26,8 @@ jobs:
       - uses: actions/checkout@v4
       - name: Set up Python
         uses: actions/setup-python@v5
-      - name: Install Poetry
-        run: pipx install poetry
-      - name: Add Poetry Version for __init__.py
-        run: poetry self add poetry-bumpversion
+      - name: Install Hatch
+        uses: pypa/hatch@install
       - name: Setup git config
         run: |
           git config user.name "GitHub Actions Bot"
@@ -38,9 +36,9 @@ jobs:
       - name: Bump Version
         id: bump_version
         run: |
-          VERSION=$(poetry version --short)
-          poetry version ${{ github.event.inputs.versionPart }}
-          BUMPED_VERSION=$(poetry version --short)
+          VERSION=$(hatch version)
+          hatch version ${{ github.event.inputs.versionPart }}
+          BUMPED_VERSION=$(hatch version)
           echo "BUMPED_VERSION=$BUMPED_VERSION" >> $GITHUB_OUTPUT
           echo "PRE_BUMP_VERSION=$VERSION" >> $GITHUB_OUTPUT
       - name: Commiting Version change

@@ -1,4 +1,5 @@
 """Logging Related Functions."""
+
 import logging
 
 import click
@@ -18,27 +19,32 @@ def set_logging(verbose: bool = False) -> None:
     verbose : bool
         wether to Log debug Messages
     """
+    root = logging.getLogger()
+    for handler in root.handlers[:]:
+        root.removeHandler(handler)
+
     if verbose:
         install_rich_traceback(suppress=[click, typer_helpers])
-        logging.basicConfig(
+        root.setLevel(logging.DEBUG)
+        handler = RichHandler(
             level=logging.DEBUG,
-            format="{name}: {message}",
-            style="{",
-            handlers=[
-                RichHandler(
-                    level=logging.DEBUG,
-                    show_path=True,
-                    rich_tracebacks=True,
-                    tracebacks_show_locals=True,
-                )
-            ],
-            datefmt="%Y-%m-%d %H:%M:%S",
+            show_path=True,
+            rich_tracebacks=True,
+            tracebacks_show_locals=True,
         )
     else:
-        logging.basicConfig(
+        root.setLevel(logging.INFO)
+        handler = RichHandler(
             level=logging.INFO,
-            format="{message}",
+            show_path=False,
+            rich_tracebacks=False,
+        )
+
+    handler.setFormatter(
+        logging.Formatter(
+            fmt="{name}: {message}" if verbose else "{message}",
             style="{",
-            handlers=[RichHandler(level=logging.INFO, show_path=False, rich_tracebacks=False)],
             datefmt="%Y-%m-%d %H:%M:%S",
         )
+    )
+    root.addHandler(handler)

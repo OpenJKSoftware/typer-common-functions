@@ -2,8 +2,8 @@
   "name": "Typer Common functions",
   "workspaceFolder": "/workspace",
   "workspaceMount": "source=${localWorkspaceFolder},target=${containerWorkspaceFolder},type=bind,consistency=cached",
-  "image": "ghcr.io/openjksoftware/python-devcontainer:3.11",
-  "postCreateCommand": "poetry config virtualenvs.in-project true && poetry install && poetry run pre-commit install --install-hooks",
+  "image": "ghcr.io/openjksoftware/python-devcontainer:3.12",
+  "postCreateCommand": "uv sync && uv pip install pre-commit hatch && uv run pre-commit install --install-hooks",
   "remoteUser": "ContainerUser",
   "mounts": [
     "source=vscode_cache,target=/home/vscode/.vscode-server,type=volume"
@@ -30,7 +30,11 @@
         "seatonjiang.gitmoji-vscode"
       ],
       "settings": {
-        "python.defaultInterpreterPath": ".venv/bin/python"
+        "python.defaultInterpreterPath": ".venv/bin/python",
+        "editor.formatOnSave": true,
+        "editor.codeActionsOnSave": {
+          "source.organizeImports": "explicit"
+        }
       }
     }
   }
