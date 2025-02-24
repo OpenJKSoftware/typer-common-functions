@@ -39,9 +39,14 @@ flowchart TD
 Our changelogs are generated automatically and include:
 
 ```markdown
-# 🔖 Version Bump: v0.1.0 → v0.2.0
+# 🔖 New Release: v0.2.0
+Previous version: v0.1.0
 
-## 📝 Changes
+## 📝 Summary
+
+<Placeholder for summary>
+
+## 📝 Whats new?
 
 - [Add new feature X](https://github.com/org/repo/commit/a1b2c3d...)
 - [Fix critical bug in module Y](https://github.com/org/repo/commit/e4f5g6h...)
