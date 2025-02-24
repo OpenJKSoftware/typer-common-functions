@@ -19,6 +19,9 @@ dependencies = [
 homepage="https://github.com/OpenJKSoftware/typer-common-functions"
 repository="https://github.com/OpenJKSoftware/typer-common-functions"
 
+[tool.hatch]
+installer = "uv"
+
 [tool.hatch.version]
 path = "src/typer_common_functions/__init__.py"
 
