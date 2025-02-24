@@ -27,6 +27,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
+          ref: main
 
       - name: Set up Python
         uses: actions/setup-python@v5
@@ -55,6 +56,9 @@ jobs:
           hatch version ${{ inputs.bump_type }}
           NEW_VERSION=$(hatch version)
           echo "NEW_VERSION=$NEW_VERSION" >> $GITHUB_OUTPUT
+          git add .
+          git commit -m "🔖 Bump version v${{ steps.current_version.outputs.CURRENT_VERSION }} → v${{ steps.bump_version.outputs.NEW_VERSION }}"
+          git push origin release/v${{ steps.current_version.outputs.CURRENT_VERSION }}
 
       - name: Generate Changelog
         id: changelog
@@ -96,6 +100,7 @@ jobs:
         uses: peter-evans/create-pull-request@v6
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
+          base: main
           branch: release/v${{ steps.current_version.outputs.CURRENT_VERSION }}
           title: "🔖 Release v${{ steps.bump_version.outputs.NEW_VERSION }}"
           body: ${{ steps.changelog.outputs.CONTENT }}
