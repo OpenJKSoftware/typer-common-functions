@@ -23,20 +23,20 @@ This project uses modern Python tooling in its workflows:
 flowchart TD
     A[Manual Trigger] -->|Select bump type| B[Version Bump Workflow]
     B -->|Create branch| C[release/v*]
-    B -->|Generate| D[Changelog from commits]
+    B -->|Generate| D[Release Notes]
     B -->|Bump version| E[New Version]
     C & D & E --> F[Create PR]
     F -->|Wait for review| G{PR Merged?}
     G -->|Yes| H[Release Workflow]
     H -->|Create| I[Git Tag]
     I -->|Trigger| J[GitHub Release]
-    J -->|With Changelog| K[PyPI Publish]
+    J -->|With Release Notes| K[PyPI Publish]
     G -->|No| L[PR Closed]
 ```
 
-## 📝 Changelog Format
+## 📝 Release Notes Format
 
-Our changelogs are generated automatically and include:
+Our release notes are generated from git history and include:
 
 ```markdown
 # 🔖 New Release: v0.2.0
@@ -46,7 +46,7 @@ Previous version: v0.1.0
 
 <Placeholder for summary>
 
-## 📝 Whats new?
+## 📝 What's new?
 
 - [Add new feature X](https://github.com/org/repo/commit/a1b2c3d...)
 - [Fix critical bug in module Y](https://github.com/org/repo/commit/e4f5g6h...)
@@ -63,10 +63,10 @@ Previous version: v0.1.0
 - **Actions**:
   1. Creates a release branch
   2. Bumps version using Hatch
-  3. Generates changelog from commits
+  3. Generates release notes from git history
   4. Creates a PR with:
      - Version bump changes
-     - Changelog
+     - Release notes from git history
      - Release labels
 
 ### 🚀 [Release and Publish Workflow](version-publish.yml)

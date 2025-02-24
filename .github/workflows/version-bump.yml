@@ -23,6 +23,10 @@ jobs:
   create-bump-pr:
     name: Create Version Bump PR
     runs-on: ubuntu-latest
+    env:
+      REPO_URL: ${{ github.server_url }}/${{ github.repository }}
+      PYTHON_VERSION: "3.12"
+
     steps:
       - uses: actions/checkout@v4
         with:
@@ -32,50 +36,69 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: "3.12"
+          python-version: ${{ env.PYTHON_VERSION }}
 
       - name: Install Hatch
         uses: pypa/hatch@install
 
-      - name: Get Current Version
-        id: current_version
+      - name: Initialize Version Info
+        id: version_info
         run: |
+          # Get current version
           CURRENT_VERSION=$(hatch version)
           echo "CURRENT_VERSION=$CURRENT_VERSION" >> $GITHUB_OUTPUT
 
-      - name: Bump Version
+      - name: Setup Git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Bump Version and Push
         id: bump_version
         run: |
+          # Get new version number first
           hatch version ${{ inputs.bump_type }}
           NEW_VERSION=$(hatch version)
           echo "NEW_VERSION=$NEW_VERSION" >> $GITHUB_OUTPUT
 
-      - name: Create Release Branch
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git checkout -b release/v${{ steps.bump_version.outputs.NEW_VERSION }}
-          git add .
-          git commit -m "🔖 Bump version v${{ steps.current_version.outputs.CURRENT_VERSION }} → v${{ steps.bump_version.outputs.NEW_VERSION }}"
-          git push origin release/v${{ steps.bump_version.outputs.NEW_VERSION }}
+          # Create release branch with new version
+          RELEASE_BRANCH="release/${NEW_VERSION}"
+          echo "RELEASE_BRANCH=$RELEASE_BRANCH" >> $GITHUB_ENV
+          git checkout -b "$RELEASE_BRANCH"
 
-      - name: Generate Changelog
+          # Commit and push the changes
+          git add -A
+          git commit -m "🔖 Bump version ${{ steps.version_info.outputs.CURRENT_VERSION }} → $NEW_VERSION"
+          git push --force origin "$RELEASE_BRANCH"
+
+      - name: Generate Release Notes
         id: changelog
+        env:
+          NEW_VERSION: ${{ steps.bump_version.outputs.NEW_VERSION }}
+          CURRENT_VERSION: ${{ steps.version_info.outputs.CURRENT_VERSION }}
         run: |
+          # Function to get commit history
+          get_commit_history() {
+            local range="$1"
+            git log --pretty=format:"- [%s]($REPO_URL/commit/%H)" --no-merges "$range" --invert-grep --grep="Bump version" || echo "No commits found"
+          }
+
           # Get the last version tag
           LAST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "")
 
-          # Get repository URL
-          REPO_URL="https://github.com/${GITHUB_REPOSITORY}"
-
-          # Create a temporary file for raw changelog
+          # Start generating release notes
           {
-            echo "# 🔖 New Release: v${{ steps.bump_version.outputs.NEW_VERSION }}"
+            echo "CONTENT<<EOF"
+            echo "# 🔖 New Release: $NEW_VERSION"
+
             if [ -z "$LAST_TAG" ]; then
               echo "Previous version: None (First Release)"
+              COMMITS=$(get_commit_history "HEAD^..HEAD")
             else
               echo "Previous version: [$LAST_TAG]($REPO_URL/releases/tag/$LAST_TAG)"
+              COMMITS=$(get_commit_history "$LAST_TAG..HEAD")
             fi
+
             echo
             echo "## 📝 Summary"
             echo
@@ -83,35 +106,33 @@ jobs:
             echo
             echo "## 📝 What's new?"
             echo
-
-            if [ -z "$LAST_TAG" ]; then
-              # If no tags exist, get all commits except the bump commit
-              git log --pretty=format:"- [%s]($REPO_URL/commit/%H)" --no-merges HEAD^..HEAD --invert-grep --grep="Bump version"
-            else
-              # Get commits since last tag except the bump commit
-              git log --pretty=format:"- [%s]($REPO_URL/commit/%H)" --no-merges ${LAST_TAG}..HEAD --invert-grep --grep="Bump version"
-            fi
-
+            echo "$COMMITS"
             echo
-            echo "---"
-          } > changelog.md
-
-          # Read the file and escape the content for GitHub Actions
-          CHANGELOG=$(cat changelog.md)
-          echo "CONTENT<<EOF" >> $GITHUB_OUTPUT
-          echo "$CHANGELOG" >> $GITHUB_OUTPUT
-          echo "EOF" >> $GITHUB_OUTPUT
+            echo "EOF"
+          } >> $GITHUB_OUTPUT
 
       - name: Create Pull Request
-        uses: peter-evans/create-pull-request@v6
+        uses: actions/github-script@v7
         with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-          base: main
-          branch: release/v${{ steps.bump_version.outputs.NEW_VERSION }}
-          title: "🔖 Release v${{ steps.bump_version.outputs.NEW_VERSION }}"
-          body: ${{ steps.changelog.outputs.CONTENT }}
-          labels: |
-            release
-            automated pr
-          commit-message: "🔖 Bump version v${{ steps.current_version.outputs.CURRENT_VERSION }} → v${{ steps.bump_version.outputs.NEW_VERSION }}"
-          delete-branch: true
+          script: |
+            const { repo, owner } = context.repo;
+            const result = await github.rest.pulls.create({
+              owner,
+              repo,
+              head: process.env.RELEASE_BRANCH,
+              base: 'main',
+              title: `🔖 Release ${process.env.NEW_VERSION}`,
+              body: process.env.CONTENT,
+              maintainer_can_modify: true
+            });
+
+            // Add labels to the PR
+            await github.rest.issues.addLabels({
+              owner,
+              repo,
+              issue_number: result.data.number,
+              labels: ['release', 'automated pr']
+            });
+        env:
+          NEW_VERSION: ${{ steps.bump_version.outputs.NEW_VERSION }}
+          CONTENT: ${{ steps.changelog.outputs.CONTENT }}
