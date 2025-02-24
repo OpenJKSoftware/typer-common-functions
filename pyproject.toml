@@ -1,3 +1,6 @@
+# --------------------------------
+# Project Metadata
+# --------------------------------
 [project]
 name = "typer-common-functions"
 dynamic = ["version"]
@@ -16,15 +19,34 @@ dependencies = [
 ]
 
 [project.urls]
-homepage="https://github.com/OpenJKSoftware/typer-common-functions"
+homepage="https://pypi.org/project/typer-common-functions/"
 repository="https://github.com/OpenJKSoftware/typer-common-functions"
 
+# --------------------------------
+# Build System
+# --------------------------------
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+# --------------------------------
+# Hatch Configuration
+# --------------------------------
 [tool.hatch]
 installer = "uv"
 
 [tool.hatch.version]
 path = "src/typer_common_functions/__init__.py"
 
+[tool.hatch.build.targets.sdist]
+include = [
+    "/src",
+    "/tests",
+    "/LICENSE",
+    "/readme.md"
+]
+
+# Development Environment
 [tool.hatch.envs.dev]
 dependencies = [
     # Formatting
@@ -52,8 +74,6 @@ cov = "coverage run -m pytest {args:tests}"
 cov-report = ["coverage report"]
 cov-html = ["coverage html"]
 lint = [
-    "black --check .",
-    "isort --check-only .",
     "flake8 .",
     "mypy src tests",
     "pylint src tests",
@@ -64,14 +84,9 @@ format = [
     "isort ."
 ]
 
-[tool.hatch.build.targets.sdist]
-include = [
-    "/src",
-    "/tests",
-    "/LICENSE",
-    "/readme.md"
-]
-
+# --------------------------------
+# Testing Configuration
+# --------------------------------
 [tool.pytest.ini_options]
 pythonpath = ["src"]
 addopts = "--cov=src --cov-report=term-missing"
@@ -91,17 +106,44 @@ exclude_lines = [
     "raise ImportError",
 ]
 
+# --------------------------------
+# Code Quality Tools
+# --------------------------------
 [tool.black]
 line-length = 120
-
-[tool.bandit]
-skips = ["B101"]
 
 [tool.isort]
 profile = "black"
 line_length = 120
 multi_line_output = 3
 
+[tool.flake8]
+docstring_style = "numpy"
+strictness = "short"
+darglint_ignore_regex = "(^test_|_test$)"
+max-line-length = 120
+ignore = ["BLK100", "E203", "W503"]
+exclude = [".git", ".venv", "__pycache__", "docs/source/conf.py", "old", "build", "dist"]
+
+[tool.bandit]
+skips = ["B101"]
+
+# --------------------------------
+# Type Checking
+# --------------------------------
+[tool.mypy]
+follow_imports="silent"
+warn_redundant_casts=true
+warn_unused_ignores=false
+disallow_any_generics=true
+check_untyped_defs=true
+no_implicit_reexport=false
+disallow_untyped_defs=true
+ignore_missing_imports=true
+
+# --------------------------------
+# Linting
+# --------------------------------
 [tool.pylint.main]
 load-plugins="pylint.extensions.docparams,pylint.extensions.docstyle,pylint.extensions.bad_builtin,pylint.extensions.check_elif,pylint.extensions.mccabe"
 
@@ -124,17 +166,3 @@ ignore-long-lines='^\s*(# )?<?https?://\S+>?$'
 msg-template="{path}:{line}: [{msg_id}({symbol}), {obj}] {msg}"
 output-format="colorized"
 reports="no"
-
-[tool.mypy]
-follow_imports="silent"
-warn_redundant_casts=true
-warn_unused_ignores=false
-disallow_any_generics=true
-check_untyped_defs=true
-no_implicit_reexport=false
-disallow_untyped_defs=true
-ignore_missing_imports=true
-
-[build-system]
-requires = ["hatchling"]
-build-backend = "hatchling.build"

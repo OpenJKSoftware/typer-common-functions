@@ -1,21 +1,17 @@
 # 🔄 GitHub Workflows
 
-This directory contains the GitHub Actions workflows for automated version management, testing, and publishing.
+Automated version management, testing, and publishing workflows.
 
 ## 🛠️ Development Tools
 
-This project uses modern Python tooling in its workflows:
+- 🏗️ **Hatch**: Environment management, building, and publishing
+  - 🔖 Version bumping
+  - 📦 PyPI publishing
+  - ⚙️ Config: `pyproject.toml`
 
-- 🏗️ **Hatch**: Used for environment management, building, and publishing
-  - Manages virtual environments
-  - Handles version bumping
-  - Builds and publishes to PyPI
-  - Configured in `pyproject.toml`
-
-- 🚀 **UV**: Fast Python package installer
-  - Used as the default installer in Hatch
-  - Provides faster dependency resolution
-  - Configured in `pyproject.toml` with `installer = "uv"`
+- ⚡ **UV**: Fast Python package installer
+  - 🔧 Default installer in Hatch
+  - 📝 Config: `installer = "uv"` in `pyproject.toml`
 
 ## 🔄 Version Management Flow
 
@@ -36,91 +32,78 @@ flowchart TD
 
 ## 📝 Release Notes Format
 
-Our release notes are generated from git history and include:
+Generated from git history:
 
 ```markdown
 # 🔖 New Release: v0.2.0
 Previous version: v0.1.0
 
-## 📝 Summary
+## 📋 Summary
 
 <Placeholder for summary>
 
-## 📝 What's new?
+## ✨ What's new?
 
 - [Add new feature X](https://github.com/org/repo/commit/a1b2c3d...)
 - [Fix critical bug in module Y](https://github.com/org/repo/commit/e4f5g6h...)
 - [Update documentation](https://github.com/org/repo/commit/i7j8k9l...)
-
----
 ```
 
 ## 🔧 Workflow Details
 
-### 🔖 [Version Bump Workflow](version-bump.yml)
-- **Trigger**: Manual via GitHub Actions UI
+### 🔖 [Version Bump](version-bump.yml)
+- **Trigger**: Manual via Actions UI
 - **Options**: patch, minor, major, rc, beta, alpha
 - **Actions**:
-  1. Creates a release branch
-  2. Bumps version using Hatch
-  3. Generates release notes from git history
-  4. Creates a PR with:
-     - Version bump changes
-     - Release notes from git history
-     - Release labels
+  1. 🌱 Creates release branch
+  2. 🔄 Bumps version using Hatch
+  3. 📝 Generates release notes
+  4. 🔗 Creates PR with changes and labels
 
-### 🚀 [Release and Publish Workflow](version-publish.yml)
+### 🚀 [Release and Publish](version-publish.yml)
 - **Trigger**: Release PR merged to main
 - **Actions**:
-  1. Creates Git tag
-  2. Creates GitHub Release
-     - Uses PR description as release notes
-     - Tags with version number
-     - Marks pre-releases automatically (rc/beta/alpha)
-  3. Publishes to PyPI using Hatch
+  1. 🏷️ Creates Git tag
+  2. 📦 Creates GitHub Release
+  3. ⬆️ Publishes to PyPI
 
-### ✅ [Quality Workflow](quality.yml)
+### ✅ [Quality](quality.yml)
 - **Trigger**: Push to main or PR
 - **Matrix**: Python 3.8, 3.11, 3.12
 - **Actions**:
-  1. Code formatting (black, isort)
-  2. Linting (flake8, pylint, mypy)
-  3. Tests with coverage
-  4. Uploads coverage results
+  1. 🎨 Code formatting
+  2. 🔍 Linting
+  3. 🧪 Tests with coverage
 
 ## ⚙️ Required Setup
 
 ### 🔑 Environment Variables
 
-- `PYPI_TOKEN`: Required for publishing to PyPI
-  - Create a token at PyPI with upload permissions
-  - Add to repository secrets
-- `GITHUB_TOKEN`: Used for PR creation and releases (automatically provided)
+- `PYPI_TOKEN`: For PyPI publishing
+- `GITHUB_TOKEN`: For PR creation (auto-provided)
 
 ### 🏷️ Repository Labels
 
-Create these labels in your repository:
-- `release`: Identifies version bump PRs
-- `automated pr`: Marks automated PRs
+Required labels:
+- 🔖 `release`: Version bump PRs
+- 🤖 `automated pr`: Automated PRs
 
 ## ❗ Troubleshooting
 
-Common issues and solutions:
+1. **🔖 Version Bump Fails**:
+   - 🔍 Check version in [`__init__.py`](../src/typer_common_functions/__init__.py)
+   - ⬇️ Verify latest commits
 
-1. **Version Bump Fails** 🔖:
-   - Check if the version in [`__init__.py`](../src/typer_common_functions/__init__.py) matches PyPI
-   - Ensure you have the latest commits
+2. **🚀 Release Creation Fails**:
+   - 🔒 Check branch permissions
+   - 🏷️ Verify tag doesn't exist
 
-2. **Release Creation Fails** 🚀:
-   - Verify branch permissions
-   - Check if tag already exists
+3. **📦 PyPI Upload Fails**:
+   - 🔑 Check token permissions
+   - 🔍 Verify version doesn't exist
 
-3. **PyPI Upload Fails** 📦:
-   - Verify PYPI_TOKEN permissions
-   - Check if version already exists on PyPI
+## 📁 Files
 
-## 📁 Files Overview
-
-- 🔖 [`version-bump.yml`](version-bump.yml): Handles version bumping and PR creation
-- 🚀 [`version-publish.yml`](version-publish.yml): Handles release creation and PyPI publishing
-- ✅ [`quality.yml`](quality.yml): Runs tests, linting, and formatting checks
+- 🔖 [`version-bump.yml`](version-bump.yml): Version bumping and PR creation
+- 🚀 [`version-publish.yml`](version-publish.yml): Release creation and publishing
+- ✅ [`quality.yml`](quality.yml): Tests, linting, formatting
