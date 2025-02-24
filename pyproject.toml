@@ -75,6 +75,8 @@ cov = "coverage run -m pytest {args:tests}"
 cov-report = ["coverage report"]
 cov-html = ["coverage html"]
 lint = [
+    "black --check .",
+    "isort --check .",
     "flake8 .",
     "mypy src",
     "pylint src tests",
