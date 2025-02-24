@@ -27,7 +27,8 @@
         "naumovs.color-highlight",
         "mechatroner.rainbow-csv",
         "bungcip.better-toml",
-        "seatonjiang.gitmoji-vscode"
+        "seatonjiang.gitmoji-vscode",
+        "bierner.markdown-mermaid"
       ],
       "settings": {
         "python.defaultInterpreterPath": ".venv/bin/python",

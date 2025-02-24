@@ -1,107 +1,106 @@
-name: Version bump
-
-concurrency:
-  group: ${{ github.workflow }}-${{ github.head_ref || github.ref }}
-  cancel-in-progress: true
+name: Version Bump
 
 on:
   workflow_dispatch:
     inputs:
-      versionPart:
-        description: "Version bump part"
+      bump_type:
+        description: "Version bump type"
         required: true
-        default: patch
         type: choice
         options:
-          - prepatch
           - patch
           - minor
           - major
+          - rc
+          - beta
+          - alpha
+
+permissions:
+  contents: write
+  pull-requests: write
 
 jobs:
-  deploy:
-    name: Version bump on release branch
+  create-bump-pr:
+    name: Create Version Bump PR
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
       - name: Set up Python
         uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: "pip"
+
       - name: Install Hatch
         uses: pypa/hatch@install
-      - name: Setup git config
+
+      - name: Get Current Version
+        id: current_version
         run: |
-          git config user.name "GitHub Actions Bot"
-          git config user.email "<>"
-          git checkout -b release
+          CURRENT_VERSION=$(hatch version)
+          echo "CURRENT_VERSION=$CURRENT_VERSION" >> $GITHUB_OUTPUT
+
+      - name: Create Release Branch
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git checkout -b release/v${{ steps.current_version.outputs.CURRENT_VERSION }}
+
       - name: Bump Version
         id: bump_version
         run: |
-          PRE_BUMP_VERSION=$(hatch version)
-          hatch version ${{ github.event.inputs.versionPart }}
-          BUMPED_VERSION=$(hatch version)
-          echo "BUMPED_VERSION=$BUMPED_VERSION" >> $GITHUB_OUTPUT
-          echo "PRE_BUMP_VERSION=$PRE_BUMP_VERSION" >> $GITHUB_OUTPUT
-      - name: Commiting Version change
+          hatch version ${{ inputs.bump_type }}
+          NEW_VERSION=$(hatch version)
+          echo "NEW_VERSION=$NEW_VERSION" >> $GITHUB_OUTPUT
+
+      - name: Generate Changelog
+        id: changelog
         run: |
-          git add --all
-          git commit -m "🔖 Package ${{ steps.bump_version.outputs.PRE_BUMP_VERSION }} to ${{ steps.bump_version.outputs.BUMPED_VERSION }}"
-      - name: Git push
-        run: |
-          git push origin release --force
+          # Get the last version tag
+          LAST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "")
+
+          # Get repository URL
+          REPO_URL="https://github.com/${GITHUB_REPOSITORY}"
+
+          {
+            echo "# 🔖 Version Bump: v${{ steps.current_version.outputs.CURRENT_VERSION }} → v${{ steps.bump_version.outputs.NEW_VERSION }}"
+            echo
+            echo "## 📝 Changes"
+            echo
+
+            if [ -z "$LAST_TAG" ]; then
+              echo "🎉 First Release!"
+              echo
+              # If no tags exist, get all commits
+              git log --pretty=format:"- [%s]($REPO_URL/commit/%H)" --no-merges
+            else
+              # Get commits since last tag
+              git log --pretty=format:"- [%s]($REPO_URL/commit/%H)" --no-merges ${LAST_TAG}..HEAD
+            fi
+
+            echo
+            echo "---"
+          } > changelog.md
+
+          # Escape content for GitHub Actions
+          CHANGELOG=$(cat changelog.md)
+          CHANGELOG="${CHANGELOG//'%'/'%25'}"
+          CHANGELOG="${CHANGELOG//$'\n'/'%0A'}"
+          CHANGELOG="${CHANGELOG//$'\r'/'%0D'}"
+          echo "CONTENT=$CHANGELOG" >> $GITHUB_OUTPUT
+
       - name: Create Pull Request
-        uses: actions/github-script@v7
+        uses: peter-evans/create-pull-request@v6
         with:
-          script: |
-            const { repo, owner } = context.repo;
-
-            let page = 1;
-            let bumpCommits = [];
-            let shouldContinue = true;
-
-            while (shouldContinue) {
-              const { data: commits } = await github.rest.repos.listCommits({
-                owner: owner,
-                repo: repo,
-                per_page: 100,
-                page: page++
-              });
-
-              for (const commit of commits) {
-                if (commit.commit.message.startsWith('🔖')) {
-                  shouldContinue = false;
-                  break;
-                } else {
-                  const firstLine = commit.commit.message.split('\n')[0];
-                  const commitLink = `- [${firstLine}](${commit.html_url})`;
-                  bumpCommits.push(commitLink);
-                }
-              }
-              if (commits.length < 100) {
-                // Break on last page
-                shouldContinue = false;
-              }
-            }
-
-            let bodyText = [
-              'Bumps Package Version ${{ steps.bump_version.outputs.PRE_BUMP_VERSION }} --> ${{ steps.bump_version.outputs.BUMPED_VERSION }},',
-              '',
-              '# What\'s Changed',
-              '',
-              ...bumpCommits
-            ].join('\n');
-            console.log("PR Text: ", bodyText)
-
-            const result = await github.rest.pulls.create({
-              title: '🔖 Bump to Version: ${{ steps.bump_version.outputs.BUMPED_VERSION }}',
-              owner,
-              repo,
-              head: 'release',
-              base: 'main',
-              body: bodyText,
-            });
-            github.rest.issues.addLabels({
-              owner,
-              repo,
-              issue_number: result.data.number,
-              labels: ['release', 'automated pr', 'auto-release']
-            });
+          token: ${{ secrets.GITHUB_TOKEN }}
+          branch: release/v${{ steps.current_version.outputs.CURRENT_VERSION }}
+          title: "🔖 Release v${{ steps.bump_version.outputs.NEW_VERSION }}"
+          body: ${{ steps.changelog.outputs.CONTENT }}
+          labels: |
+            release
+            automated pr
+          commit-message: "🔖 Bump version v${{ steps.current_version.outputs.CURRENT_VERSION }} → v${{ steps.bump_version.outputs.NEW_VERSION }}"
+          delete-branch: true

@@ -1,21 +1,18 @@
-name: Publish
-
-concurrency:
-  group: ${{ github.workflow }}-${{ github.head_ref || github.ref }}
-  cancel-in-progress: true
+name: Release and Publish
 
 on:
-  release:
-    types: [created]
-  workflow_call:
-    secrets:
-      PYPI_TOKEN:
-        required: true
+  pull_request:
+    types: [closed]
+    branches: [main]
+
+permissions:
+  contents: write
+  pull-requests: write
 
 jobs:
-  deploy:
+  release:
+    if: github.event.pull_request.merged == true && contains(github.event.pull_request.labels.*.name, 'release')
     runs-on: ubuntu-latest
-    name: Publish to PyPI
     steps:
       - uses: actions/checkout@v4
         with:
@@ -24,18 +21,35 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: "3.8"
+          python-version: "3.12"
+          cache: "pip"
 
       - name: Install Hatch
         uses: pypa/hatch@install
 
-      - name: Set Version
+      - name: Get Version
+        id: version
         run: |
-          VERSION=$(git describe --tags --abbrev=0)
-          echo "Publishing version $VERSION"
-          hatch version $VERSION
+          VERSION=$(hatch version)
+          echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
 
-      - name: Build and Publish
+      - name: Create Git Tag
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git tag -a "v${{ steps.version.outputs.VERSION }}" -m "Release v${{ steps.version.outputs.VERSION }}"
+          git push origin "v${{ steps.version.outputs.VERSION }}"
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
+        with:
+          name: v${{ steps.version.outputs.VERSION }}
+          tag_name: v${{ steps.version.outputs.VERSION }}
+          body: ${{ github.event.pull_request.body }}
+          draft: false
+          prerelease: ${{ contains(steps.version.outputs.VERSION, 'rc') || contains(steps.version.outputs.VERSION, 'beta') || contains(steps.version.outputs.VERSION, 'alpha') }}
+
+      - name: Build and Publish to PyPI
         env:
           HATCH_INDEX_USER: __token__
           HATCH_INDEX_AUTH: ${{ secrets.PYPI_TOKEN }}
